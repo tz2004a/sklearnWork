@@ -1,51 +1,63 @@
-﻿// See https://aka.ms/new-console-template for more information
-//Console.WriteLine("Hello, World!");
-using Microsoft.CognitiveServices.Speech;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio;
+using Microsoft.CognitiveServices.Speech.Translation;
 
-namespace Speech_To_Text_app
+namespace SpeechTranslation
 {
     class Program
     {
-
-        static async Task Main(string[] args)
+        static void Main(String[] args)
         {
-            await RecognizeSpeech();
-            Console.WriteLine("Finished");
+            TranslateSpeech().Wait();
+            Console.ReadKey();
         }
 
-        private static async Task RecognizeSpeech()
+        private static async Task TranslateSpeech()
         {
-            var configuration = SpeechConfig.FromSubscription("00e1204b96cf4fe6a604c593347578ff", "eastus");
-            //configuration.SpeechRecognitionLanguage = "en";
-            using (var recog = new SpeechRecognizer(configuration))
-            {
-                Console.WriteLine("Speak something...");
-                var result = await recog.RecognizeOnceAsync();
-                Console.WriteLine("Can this be understood?");
-                Console.WriteLine(result.Reason);
-                if (result.Reason == ResultReason.RecognizedSpeech)
-                {
-                    Console.WriteLine(result.Text);
-                }
-                else if (result.Reason == ResultReason.NoMatch)
-                {
-                    Console.WriteLine($"NOMATCH: SPEECH could not be recognized.");
-                    Console.WriteLine(result.Text);
-                }
-                else if (result.Reason == ResultReason.Canceled)
-                {
-                    var cancellation = CancellationDetails.FromResult(result);
-                    Console.WriteLine($"CANCELED: Reason={cancellation.Reason}");
+            string fromLanguage = "es-mx";
+            var config = SpeechTranslationConfig.FromSubscription("ed1d279426e9409db611c62b6af1addd", "eastus");
+            config.SpeechRecognitionLanguage = fromLanguage;
+            config.AddTargetLanguage("en");
 
-                    if (cancellation.Reason == CancellationReason.Error)
+            //const string frenchVoice = "fr-FR";
+            //config.VoiceName = frenchVoice;
+
+            using (var recognizer = new TranslationRecognizer(config))
+            {
+                recognizer.Recognized += (s, e) =>
+                {
+                    if (e.Result.Reason == ResultReason.TranslatingSpeech)
                     {
-                        Console.WriteLine($"CANCELED: ErrorCode={cancellation.ErrorCode}");
-                        Console.WriteLine($"CANCELED: ErrorDetails={cancellation.ErrorDetails}");
-                        Console.WriteLine($"CANCELED: Did you update the subscription info?");
+                        Console.WriteLine($"\nRecognized text in {fromLanguage} - {e.Result.Text}.");
                     }
+
+                    foreach (var element in e.Result.Translations)
+                    {
+                        Console.WriteLine($"TRANSLATING into '{element.Key}' - {element.Value}");
+                    }
+                };
+
+                recognizer.Synthesizing += (s, e) => {
+                    var audio = e.Result.GetAudio();
+                    if (audio.Length > 0)
+                    {
+                        Console.WriteLine($"Audio size; {audio.Length}");
+                        File.WriteAllBytes("MyFrenchSpeech.wav", audio);
+                    }
+                };
+
+                recognizer.SessionStarted += (s, e) => { Console.WriteLine("\nSession started. Please speak something..."); };
+                recognizer.SessionStopped += (s, e) => { Console.WriteLine("\nSession stopped event."); };
+
+                await recognizer.StartContinuousRecognitionAsync();
+                do
+                {
+                    Console.WriteLine("Enter key to stop...");
                 }
+                while (Console.ReadKey().Key != ConsoleKey.Enter);
+                await recognizer.StopContinuousRecognitionAsync();
             }
         }
     }
