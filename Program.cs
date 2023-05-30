@@ -17,7 +17,7 @@ namespace SpeechTranslation
         private static async Task TranslateSpeech()
         {
             string fromLanguage = "es-mx";
-            var config = SpeechTranslationConfig.FromSubscription("SUBSCRIPTION_KEY_ID", "eastus");
+            var config = SpeechTranslationConfig.FromSubscription("SUBSCRIPTION_KEY", "eastus");
             config.SpeechRecognitionLanguage = fromLanguage;
             config.AddTargetLanguage("en");
 
@@ -28,7 +28,7 @@ namespace SpeechTranslation
             {
                 recognizer.Recognized += (s, e) =>
                 {
-                    if (e.Result.Reason == ResultReason.TranslatingSpeech)
+                    if (e.Result.Reason == ResultReason.TranslatedSpeech)
                     {
                         Console.WriteLine($"\nRecognized text in {fromLanguage} - {e.Result.Text}.");
                     }
