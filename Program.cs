@@ -17,7 +17,7 @@ namespace SpeechTranslation
         private static async Task TranslateSpeech()
         {
             string fromLanguage = "es-mx";
-            var config = SpeechTranslationConfig.FromSubscription("ed1d279426e9409db611c62b6af1addd", "eastus");
+            var config = SpeechTranslationConfig.FromSubscription("SUBSCRIPTION_KEY_ID", "eastus");
             config.SpeechRecognitionLanguage = fromLanguage;
             config.AddTargetLanguage("en");
 
